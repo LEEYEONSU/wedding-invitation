@@ -640,32 +640,94 @@
             font-style: italic;
         }
 
+        /* 지도 버튼 스타일 */
         .map-button {
-            background: rgba(255, 255, 255, 0.8);
-            color: #666;
-            border: 1px solid rgba(200, 200, 200, 0.3);
-            padding: 15px 35px;
-            font-size: 14px;
-            font-weight: 500;
+            padding: 15px 20px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 20px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
+            margin: 0;
+            border-radius: 30px;
+            border: 2px solid transparent;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            min-width: 140px;
+            flex: 1;
+            max-width: 160px;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
-        .map-button:hover {
-            background: rgba(255, 255, 255, 0.95);
-            color: #333;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            border-color: rgba(150, 150, 150, 0.4);
+        .tmap-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            border: 2px solid #ff6b6b;
+        }
+
+        .tmap-btn:hover, .tmap-btn:focus {
+            background: linear-gradient(135deg, #ff5252, #ff7979);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+            border-color: #ff5252;
+        }
+
+        .naver-btn {
+            background: linear-gradient(135deg, #00c851, #00a047);
+            color: white;
+            border: 2px solid #00c851;
+        }
+
+        .naver-btn:hover, .naver-btn:focus {
+            background: linear-gradient(135deg, #00b248, #009141);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 200, 81, 0.4);
+            border-color: #00b248;
         }
 
         .map-button:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-button.clicked {
+            animation: buttonClick 0.6s ease;
+        }
+
+        @keyframes buttonClick {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); filter: brightness(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        .button-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .button-text {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .map-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 20px;
+            margin: 25px 0;
+            padding: 15px;
+            flex-wrap: nowrap;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .footer {
@@ -714,6 +776,32 @@
             
             .heart-snow {
                 font-size: 14px;
+            }
+            
+            .map-button {
+                padding: 16px 20px;
+                font-size: 14px;
+                min-width: 130px;
+                max-width: 150px;
+                margin: 0;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            .button-icon {
+                font-size: 16px;
+                margin-right: 6px;
+            }
+            
+            .button-text {
+                font-size: 12px;
+            }
+            
+            .map-buttons {
+                gap: 15px;
+                padding: 20px 10px;
+                max-width: 350px;
+                flex-wrap: nowrap;
             }
         }
     </style>
@@ -783,15 +871,27 @@
                 </div>
 
             <!-- 지도 미리보기 -->
-            <div class="map-preview" onclick="openMap()">
+            <div class="map-preview">
                 <div class="map-placeholder">
                     <div class="map-icon">📍</div>
                     <div class="map-text">
                         <div class="map-venue">르비르모어</div>
-                                                 <div class="map-address">서울 강남구 선릉역</div>
-                        <div class="map-hint">클릭하여 지도 보기</div>
+                        <div class="map-address">서울 강남구 선릉역</div>
+                        <div class="map-hint">아래 버튼으로 지도 앱 열기</div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- 지도 버튼들 -->
+            <div class="map-buttons">
+                <button class="map-button tmap-btn" onclick="handleTmapClick(event)">
+                    <span class="button-icon">🚗</span>
+                    <span class="button-text">TMAP</span>
+                </button>
+                <button class="map-button naver-btn" onclick="handleNaverMapClick(event)">
+                    <span class="button-icon">🗺️</span>
+                    <span class="button-text">네이버지도</span>
+                </button>
             </div>
 
 
@@ -909,24 +1009,174 @@
     </div>
 
     <script>
-        function openMap() {
-            const venueName = "르비르모어 선릉역";
-            const encodedVenueName = encodeURIComponent(venueName);
+        // 버튼 클릭 핸들러들
+        function handleTmapClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const button = event.currentTarget;
             
-            // 네이버 지도로 연결
-            if (confirm("네이버 지도로 이동하시겠습니까?")) {
-                // 모바일에서는 네이버 지도 앱으로 연결
-                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                    // 네이버 지도 앱 연결 (앱이 없으면 웹으로)
-                    window.open(`nmap://search?query=${encodedVenueName}&appname=wedding.invitation`, '_blank');
-                    // 백업으로 웹 네이버 지도도 실행
+            console.log("TMAP 버튼 클릭됨"); // 디버깅용
+            
+            // 시각적 피드백
+            button.classList.add('clicked');
+            button.style.opacity = '0.8';
+            
+            // 즉시 TMAP 실행
+            try {
+                openTmap();
+            } catch (error) {
+                console.error("TMAP 실행 오류:", error);
+                alert("TMAP을 열 수 없습니다. 앱이 설치되어 있는지 확인해주세요.");
+            }
+            
+            // 시각적 피드백 제거
+            setTimeout(() => {
+                button.classList.remove('clicked');
+                button.style.opacity = '1';
+            }, 600);
+        }
+
+        function handleNaverMapClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const button = event.currentTarget;
+            
+            console.log("네이버지도 버튼 클릭됨"); // 디버깅용
+            
+            // 시각적 피드백
+            button.classList.add('clicked');
+            button.style.opacity = '0.8';
+            
+            // 즉시 네이버지도 실행
+            try {
+                openNaverMap();
+            } catch (error) {
+                console.error("네이버지도 실행 오류:", error);
+                alert("네이버지도를 열 수 없습니다. 앱이 설치되어 있는지 확인해주세요.");
+            }
+            
+            // 시각적 피드백 제거
+            setTimeout(() => {
+                button.classList.remove('clicked');
+                button.style.opacity = '1';
+            }, 600);
+        }
+
+        function openNaverMap() {
+            const venueName = "르비르모어";
+            const venueAddress = "서울특별시 강남구 선릉로 521";
+            const latitude = "37.5043";
+            const longitude = "127.048";
+            
+            console.log("네이버지도 버튼 클릭됨"); // 디버깅용
+            
+            try {
+                // 모바일 디바이스 감지
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // 네이버지도 앱 스킴 URL 구성
+                    let naverAppUrl;
+                    let naverWebUrl = `https://map.naver.com/v5/search/${encodeURIComponent(venueName)}`;
+                    
+                    if (isAndroid) {
+                        // Android 네이버지도 앱 스킴
+                        naverAppUrl = `nmap://search?query=${encodeURIComponent(venueName)}&lat=${latitude}&lng=${longitude}`;
+                    } else if (isIOS) {
+                        // iOS 네이버지도 앱 스킴
+                        naverAppUrl = `nmap://search?query=${encodeURIComponent(venueName)}`;
+                    }
+                    
+                    console.log("네이버지도 앱 실행 시도:", naverAppUrl);
+                    
+                    // 직접 앱 실행 시도
+                    if (naverAppUrl) {
+                        window.location.href = naverAppUrl;
+                    }
+                    
+                    // 2초 후 앱이 실행되지 않으면 웹으로 이동
                     setTimeout(() => {
-                        window.open(`https://map.naver.com/v5/search/${encodedVenueName}`, '_blank');
-                    }, 1000);
+                        console.log("네이버지도 앱이 응답하지 않음. 웹으로 연결합니다.");
+                        window.open(naverWebUrl, '_blank');
+                    }, 2000);
+                    
                 } else {
-                    // PC에서는 네이버 지도 웹으로
-                    window.open(`https://map.naver.com/v5/search/${encodedVenueName}`, '_blank');
+                    // PC: 웹 버전으로 바로 연결
+                    const webUrl = `https://map.naver.com/v5/search/${encodeURIComponent(venueName)}`;
+                    console.log("PC에서 네이버지도 웹 연결:", webUrl);
+                    window.open(webUrl, '_blank');
                 }
+            } catch (error) {
+                console.error("네이버지도 열기 오류:", error);
+                // 오류 발생 시 기본 웹 버전으로 연결
+                const fallbackUrl = `https://map.naver.com/v5/search/${encodeURIComponent(venueName)}`;
+                window.open(fallbackUrl, '_blank');
+            }
+        }
+
+        function openTmap() {
+            const venueName = "르비르모어";
+            const venueAddress = "서울특별시 강남구 선릉로 521";
+            const latitude = "37.5043";
+            const longitude = "127.048";
+            
+            console.log("TMAP 버튼 클릭됨"); // 디버깅용
+            
+            try {
+                // 모바일 디바이스 감지
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // TMAP 앱 스킴 URL 구성
+                    let tmapAppUrl;
+                    let tmapWebUrl = `https://tmap.life/route/search?name=${encodeURIComponent(venueName)}`;
+                    
+                    if (isAndroid) {
+                        // Android TMAP 길찾기 앱 스킴
+                        tmapAppUrl = `tmap://route?goalname=${encodeURIComponent(venueName)}&goalx=${longitude}&goaly=${latitude}`;
+                    } else if (isIOS) {
+                        // iOS TMAP 앱 스킴
+                        tmapAppUrl = `tmap://search?name=${encodeURIComponent(venueName)}`;
+                    }
+                    
+                    // 직접 앱 실행 시도
+                    console.log("TMAP 앱 실행 시도:", tmapAppUrl);
+                    
+                    // Universal Link 방식으로 앱 실행 시도
+                    const universalLink = `https://apis.openapi.sk.com/tmap/app/routes/route-around?name=${encodeURIComponent(venueName)}`;
+                    
+                    // 먼저 Universal Link 시도 (iOS), 그 다음 앱 스킴 시도
+                    if (isIOS) {
+                        window.location.href = universalLink;
+                        setTimeout(() => {
+                            window.location.href = tmapAppUrl;
+                        }, 100);
+                    } else if (isAndroid) {
+                        // Android는 바로 앱 스킴 시도
+                        window.location.href = tmapAppUrl;
+                    }
+                    
+                    // 2.5초 후 앱이 실행되지 않으면 웹으로 이동
+                    setTimeout(() => {
+                        console.log("TMAP 앱이 응답하지 않음. 웹으로 연결합니다.");
+                        window.open(tmapWebUrl, '_blank');
+                    }, 2500);
+                    
+                } else {
+                    // PC: 웹 버전으로 바로 연결
+                    const webUrl = `https://tmap.life/route/search?name=${encodeURIComponent(venueName)}`;
+                    console.log("PC에서 TMAP 웹 연결:", webUrl);
+                    window.open(webUrl, '_blank');
+                }
+            } catch (error) {
+                console.error("TMAP 열기 오류:", error);
+                // 오류 발생 시 기본 웹 버전으로 연결
+                const fallbackUrl = `https://tmap.life/route/search?name=${encodeURIComponent(venueName)}`;
+                window.open(fallbackUrl, '_blank');
             }
         }
 
