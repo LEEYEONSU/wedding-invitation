@@ -1755,8 +1755,267 @@
             }
         }
 
-        // 스플래시 스크린 관리
+
+
+        // 갤러리 모달 함수들
+        function openModal(imageSrc) {
+            console.log('모달 열기 시도:', imageSrc);
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            if (!modal || !modalImage) {
+                console.error('모달 요소를 찾을 수 없습니다');
+                return;
+            }
+            
+            // 현재 이미지 인덱스 찾기
+            currentImageIndex = galleryImages.findIndex(img => img === imageSrc);
+            if (currentImageIndex === -1) {
+                console.warn('이미지를 배열에서 찾을 수 없음, 첫 번째 이미지로 설정');
+                currentImageIndex = 0;
+            }
+            
+            console.log('현재 이미지 인덱스:', currentImageIndex);
+            
+            // 카운터 업데이트
+            updateModalCounter();
+            
+            // 로딩 인디케이터 표시
+            showImageLoading(true);
+            
+            // 이미지 로드 처리
+            modalImage.onload = function() {
+                console.log('이미지 로드 완료:', this.src);
+                showImageLoading(false);
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+                
+                // 터치 이벤트 초기화
+                initTouchEvents();
+            };
+            
+            modalImage.onerror = function() {
+                console.error('이미지 로드 실패:', this.src);
+                showImageLoading(false);
+                alert('이미지를 불러올 수 없습니다.');
+            };
+            
+            // 이미지 경로 정규화 (./를 제거하고 상대 경로 확실히 하기)
+            const normalizedSrc = imageSrc.startsWith('./') ? imageSrc.substring(2) : imageSrc;
+            modalImage.src = normalizedSrc;
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            if (!modal) return;
+            
+            console.log('모달 닫기');
+            modal.style.animation = 'fadeOut 0.3s ease';
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+                modal.style.animation = '';
+                document.body.style.overflow = 'auto'; // 배경 스크롤 복원
+                
+                // 터치 이벤트 정리
+                cleanupTouchEvents();
+            }, 300);
+        }
+
+        function prevImage() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+            } else {
+                currentImageIndex = galleryImages.length - 1; // 마지막 이미지로
+            }
+            console.log('이전 이미지로 이동:', currentImageIndex);
+            showCurrentImage();
+        }
+
+        function nextImage() {
+            if (currentImageIndex < galleryImages.length - 1) {
+                currentImageIndex++;
+            } else {
+                currentImageIndex = 0; // 첫 번째 이미지로
+            }
+            console.log('다음 이미지로 이동:', currentImageIndex);
+            showCurrentImage();
+        }
+
+        function showCurrentImage() {
+            const modalImage = document.getElementById('modalImage');
+            if (!modalImage || !galleryImages[currentImageIndex]) {
+                console.error('이미지 요소 또는 이미지 경로를 찾을 수 없음');
+                return;
+            }
+            
+            showImageLoading(true);
+            
+            modalImage.onload = function() {
+                console.log('새 이미지 로드 완료:', this.src);
+                showImageLoading(false);
+                updateModalCounter();
+            };
+            
+            modalImage.onerror = function() {
+                console.error('이미지 로드 실패:', this.src);
+                showImageLoading(false);
+                alert('이미지를 불러올 수 없습니다.');
+            };
+            
+            const imageSrc = galleryImages[currentImageIndex];
+            const normalizedSrc = imageSrc.startsWith('./') ? imageSrc.substring(2) : imageSrc;
+            modalImage.src = normalizedSrc;
+        }
+
+        function updateModalCounter() {
+            const currentElement = document.getElementById('currentImageIndex');
+            const totalElement = document.getElementById('totalImages');
+            
+            if (currentElement && totalElement) {
+                currentElement.textContent = currentImageIndex + 1;
+                totalElement.textContent = galleryImages.length;
+            }
+        }
+
+        // 로딩 인디케이터 관리
+        function showImageLoading(show) {
+            const modalContent = document.querySelector('.modal-content');
+            if (!modalContent) return;
+            
+            let loadingIndicator = modalContent.querySelector('.loading-indicator');
+            
+            if (show) {
+                if (!loadingIndicator) {
+                    loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'loading-indicator';
+                    loadingIndicator.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        color: white;
+                        font-size: 18px;
+                        z-index: 10004;
+                        background: rgba(0,0,0,0.7);
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                    `;
+                    loadingIndicator.textContent = '로딩 중...';
+                    modalContent.appendChild(loadingIndicator);
+                }
+                loadingIndicator.style.display = 'block';
+            } else {
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            }
+        }
+
+        // 터치 이벤트 처리 (스와이프)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        function initTouchEvents() {
+            const modal = document.getElementById('imageModal');
+            if (!modal) return;
+            
+            modal.addEventListener('touchstart', handleTouchStart, { passive: true });
+            modal.addEventListener('touchend', handleTouchEnd, { passive: true });
+        }
+
+        function cleanupTouchEvents() {
+            const modal = document.getElementById('imageModal');
+            if (!modal) return;
+            
+            modal.removeEventListener('touchstart', handleTouchStart);
+            modal.removeEventListener('touchend', handleTouchEnd);
+        }
+
+        function handleTouchStart(event) {
+            if (event.touches.length === 1) {
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+            }
+        }
+
+        function handleTouchEnd(event) {
+            if (event.changedTouches.length === 1) {
+                touchEndX = event.changedTouches[0].clientX;
+                touchEndY = event.changedTouches[0].clientY;
+                handleSwipe();
+            }
+        }
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+            
+            // 수직 스와이프가 수평 스와이프보다 크면 무시
+            if (Math.abs(deltaY) > Math.abs(deltaX)) {
+                return;
+            }
+            
+            if (Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // 오른쪽 스와이프 - 이전 이미지
+                    console.log('오른쪽 스와이프 - 이전 이미지');
+                    prevImage();
+                } else {
+                    // 왼쪽 스와이프 - 다음 이미지
+                    console.log('왼쪽 스와이프 - 다음 이미지');
+                    nextImage();
+                }
+            }
+        }
+
+        // 모달 배경 클릭시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target === modal) {
+                console.log('모달 배경 클릭으로 닫기');
+                closeModal();
+            }
+        }
+
+        // 키보드 이벤트 (ESC로 닫기, 좌우 화살표로 이미지 변경)
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal && modal.style.display === 'block') {
+                console.log('키보드 이벤트:', event.key);
+                if (event.key === 'Escape') {
+                    closeModal();
+                } else if (event.key === 'ArrowLeft') {
+                    prevImage();
+                } else if (event.key === 'ArrowRight') {
+                    nextImage();
+                }
+                event.preventDefault(); // 기본 동작 방지
+            }
+        });
+
+        // 환경 정보 출력 (디버깅용)
+        function logEnvironmentInfo() {
+            console.log('=== 환경 정보 ===');
+            console.log('URL:', window.location.href);
+            console.log('프로토콜:', window.location.protocol);
+            console.log('호스트:', window.location.host);
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Secure Context:', window.isSecureContext);
+            console.log('Navigator.clipboard:', !!navigator.clipboard);
+            console.log('Document.execCommand:', !!document.execCommand);
+            console.log('==============');
+        }
+
+        // 페이지 로드 시 환경 정보 출력
         document.addEventListener('DOMContentLoaded', function() {
+            logEnvironmentInfo();
+            
             const splashScreen = document.getElementById('splashScreen');
             const mainContent = document.getElementById('mainContent');
             
@@ -1765,6 +2024,19 @@
                 console.error('Required elements not found');
                 return;
             }
+            
+            // 이미지 경로 확인
+            galleryImages.forEach((img, index) => {
+                const imgElement = new Image();
+                imgElement.onload = function() {
+                    console.log(`이미지 ${index + 1} 로드 성공:`, img);
+                };
+                imgElement.onerror = function() {
+                    console.error(`이미지 ${index + 1} 로드 실패:`, img);
+                };
+                const normalizedSrc = img.startsWith('./') ? img.substring(2) : img;
+                imgElement.src = normalizedSrc;
+            });
             
             // 3초 후에 스플래시 스크린 페이드아웃 및 메인 콘텐츠 표시
             setTimeout(() => {
@@ -1789,152 +2061,143 @@
                     card.style.transform = 'translateY(0)';
                 }, 3500); // 스플래시 스크린 이후에 실행
             }
-            
-
         });
-
-        // 갤러리 모달 함수들
-        function openModal(imageSrc) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            
-            // 현재 이미지 인덱스 찾기
-            currentImageIndex = galleryImages.findIndex(img => img === imageSrc);
-            if (currentImageIndex === -1) currentImageIndex = 0;
-            
-            // 카운터 업데이트
-            updateModalCounter();
-            
-            // 이미지 로드 후 모달 표시
-            modalImage.onload = function() {
-                modal.style.display = 'block';
-                modal.classList.add('show');
-                document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
-            };
-            
-            modalImage.src = imageSrc;
-            console.log('Opening modal with image:', imageSrc);
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('imageModal');
-            modal.style.animation = 'fadeOut 0.3s ease';
-            
-            setTimeout(() => {
-                modal.style.display = 'none';
-                modal.classList.remove('show');
-                modal.style.animation = '';
-                document.body.style.overflow = 'auto'; // 배경 스크롤 복원
-            }, 300);
-        }
-
-        function prevImage() {
-            if (currentImageIndex > 0) {
-                currentImageIndex--;
-            } else {
-                currentImageIndex = galleryImages.length - 1; // 마지막 이미지로
-            }
-            showCurrentImage();
-        }
-
-        function nextImage() {
-            if (currentImageIndex < galleryImages.length - 1) {
-                currentImageIndex++;
-            } else {
-                currentImageIndex = 0; // 첫 번째 이미지로
-            }
-            showCurrentImage();
-        }
-
-        function showCurrentImage() {
-            const modalImage = document.getElementById('modalImage');
-            modalImage.src = galleryImages[currentImageIndex];
-            updateModalCounter();
-        }
-
-        function updateModalCounter() {
-            document.getElementById('currentImageIndex').textContent = currentImageIndex + 1;
-            document.getElementById('totalImages').textContent = galleryImages.length;
-        }
-
-        // 모달 배경 클릭시 닫기
-        window.onclick = function(event) {
-            const modal = document.getElementById('imageModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-
-        // 키보드 이벤트 (ESC로 닫기, 좌우 화살표로 이미지 변경)
-        document.addEventListener('keydown', function(event) {
-            const modal = document.getElementById('imageModal');
-            if (modal.style.display === 'block') {
-                if (event.key === 'Escape') {
-                    closeModal();
-                } else if (event.key === 'ArrowLeft') {
-                    prevImage();
-                } else if (event.key === 'ArrowRight') {
-                    nextImage();
-                }
-            }
-        });
-
-
-        
-        // 페이지 로드 시 저장된 방명록 로드는 위의 DOMContentLoaded에서 처리
 
         // 계좌번호 복사 기능
         function copyAccountNumber(accountNumber, ownerName) {
+            console.log(`복사 시도: ${accountNumber}, 환경: ${window.location.protocol}`);
+            
             try {
-                // 클립보드 API를 사용하여 복사
-                if (navigator.clipboard && window.isSecureContext) {
-                    // 최신 클립보드 API 사용
+                // 먼저 최신 클립보드 API 시도 (HTTPS 환경에서만 작동)
+                if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+                    console.log('클립보드 API 사용 시도');
                     navigator.clipboard.writeText(accountNumber).then(() => {
                         showCopyFeedback(ownerName);
-                        console.log(`계좌번호 복사 완료: ${accountNumber}`);
+                        console.log(`클립보드 API로 복사 완료: ${accountNumber}`);
                     }).catch(err => {
-                        console.error('클립보드 복사 실패:', err);
+                        console.error('클립보드 API 복사 실패:', err);
                         fallbackCopyMethod(accountNumber, ownerName);
                     });
                 } else {
-                    // 폴백 방법 사용
+                    console.log('클립보드 API 사용 불가, 폴백 방법 사용');
+                    // 클립보드 API를 사용할 수 없으면 폴백 방법 사용
                     fallbackCopyMethod(accountNumber, ownerName);
                 }
             } catch (error) {
                 console.error('복사 중 오류 발생:', error);
-                // 수동 복사 안내
-                alert(`계좌번호: ${accountNumber}\n위 번호를 수동으로 복사해주세요.`);
+                // 최종 폴백: 수동 복사 안내
+                showManualCopyAlert(accountNumber, ownerName);
             }
         }
 
         // 폴백 복사 방법 (구형 브라우저용)
         function fallbackCopyMethod(accountNumber, ownerName) {
             try {
+                console.log('폴백 복사 방법 시도');
+                
                 // 임시 텍스트 영역 생성
                 const textArea = document.createElement('textarea');
                 textArea.value = accountNumber;
+                
+                // 화면에 보이지 않게 설정하되, 접근 가능하게 유지
                 textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                textArea.style.top = '-999999px';
+                textArea.style.left = '-9999px';
+                textArea.style.top = '-9999px';
+                textArea.style.opacity = '0';
+                textArea.style.zIndex = '-1';
+                textArea.setAttribute('readonly', '');
+                textArea.setAttribute('tabindex', '-1');
+                
                 document.body.appendChild(textArea);
                 
-                textArea.focus();
-                textArea.select();
+                // iOS Safari 지원을 위한 추가 설정
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    textArea.contentEditable = true;
+                    textArea.readOnly = false;
+                    const range = document.createRange();
+                    range.selectNodeContents(textArea);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    textArea.setSelectionRange(0, 999999);
+                } else {
+                    textArea.focus();
+                    textArea.select();
+                }
                 
                 // execCommand로 복사 시도
-                const successful = document.execCommand('copy');
+                let successful = false;
+                try {
+                    successful = document.execCommand('copy');
+                } catch (execError) {
+                    console.error('execCommand 실패:', execError);
+                    successful = false;
+                }
+                
+                // 임시 요소 제거
                 document.body.removeChild(textArea);
                 
                 if (successful) {
                     showCopyFeedback(ownerName);
-                    console.log(`폴백 방법으로 계좌번호 복사 완료: ${accountNumber}`);
+                    console.log(`폴백 방법으로 복사 완료: ${accountNumber}`);
                 } else {
-                    throw new Error('execCommand 복사 실패');
+                    console.log('폴백 방법 실패, 수동 복사 안내');
+                    showManualCopyAlert(accountNumber, ownerName);
                 }
             } catch (error) {
                 console.error('폴백 복사 방법 실패:', error);
-                // 수동 복사 안내
-                alert(`${ownerName} 계좌번호: ${accountNumber}\n\n위 번호를 수동으로 복사해주세요.`);
+                showManualCopyAlert(accountNumber, ownerName);
+            }
+        }
+
+        // 수동 복사 안내 함수
+        function showManualCopyAlert(accountNumber, ownerName) {
+            const alertMessage = `${ownerName} 계좌번호\n\n${accountNumber}\n\n위 번호를 길게 눌러 복사해주세요.`;
+            
+            // 모바일에서는 alert 대신 더 나은 UX 제공
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                // 임시로 큰 텍스트로 계좌번호 표시
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 30px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    z-index: 10003;
+                    text-align: center;
+                    max-width: 90%;
+                    border: 2px solid #007bff;
+                `;
+                
+                tempDiv.innerHTML = `
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333;">
+                        ${ownerName} 계좌번호
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #007bff; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #007bff; user-select: all;">
+                        ${accountNumber}
+                    </div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 20px;">
+                        위 번호를 길게 눌러서 복사해주세요
+                    </div>
+                    <button onclick="this.parentElement.remove()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                        확인
+                    </button>
+                `;
+                
+                document.body.appendChild(tempDiv);
+                
+                // 5초 후 자동 제거
+                setTimeout(() => {
+                    if (tempDiv.parentElement) {
+                        tempDiv.remove();
+                    }
+                }, 5000);
+            } else {
+                alert(alertMessage);
             }
         }
 
